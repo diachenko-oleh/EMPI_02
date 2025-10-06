@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Globalization;
 using System.Runtime.Intrinsics.X86;
 
 namespace EMPI_02
@@ -10,6 +11,8 @@ namespace EMPI_02
         static double b = 1.2;
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            Console.WriteLine($"y={k}x+{b}");
             Dictionary<int,double> points = [];
             for (int i = 1; i <= N+10; i++)
             {
@@ -18,17 +21,17 @@ namespace EMPI_02
             Console.WriteLine("вихiднi данi:");
             foreach (var item in points)
             {
-                Console.WriteLine("x: "+item.Key+"  y: "+item.Value);
+                Console.WriteLine("("+item.Key+","+item.Value+")");     //початкові дані
             }
 
-            double sigma = Math.Sqrt(N / 5);
+            double sigma = Math.Sqrt(N / 5);            //задаємо дисперсію
             double[] noise = new double[N + 10];
             Random rnd = new Random();
             for (int i = 0; i < N+10; i++)
             {
                 double u1 = 1.0 - rnd.NextDouble(); 
                 double u2 = 1.0 - rnd.NextDouble();
-                double z0 = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
+                double z0 = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);      //нормальний розподіл
                 noise[i] = z0 * sigma;
             }
 
@@ -39,7 +42,7 @@ namespace EMPI_02
             }
             foreach (var item in points)
             {
-                Console.WriteLine("x: " + item.Key + "  y: " + item.Value);
+                Console.WriteLine("(" + item.Key + "," + item.Value + ")");
             }
 
             double sumX = 0;
