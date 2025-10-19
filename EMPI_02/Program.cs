@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using MathNet.Numerics.Distributions;
+using MathNet.Numerics.Providers.LinearAlgebra;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.Intrinsics.X86;
 
@@ -6,82 +8,125 @@ namespace EMPI_02
 {
     internal class Program
     {
-        static int N = 10;
-        static double k = 0.4;
-        static double b = 1.2;
+        static double alpha = 0.01;
         static void Main(string[] args)
         {
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            Console.WriteLine($"y={k}x+{b}");
-            Dictionary<int,double> points = [];
-            for (int i = 1; i <= N+10; i++)
+            /*
+            Console.WriteLine("enter nums by space:");
+            string numLine = Console.ReadLine();
+            string[] S = numLine.Trim().Split();
+            List<int> nums = [];
+            foreach (var item in S)
             {
-                points[i] = Math.Round(k * i + b,2);
+               int n = int.Parse(item);
+                if (n >= 0 && n <= 20) nums.Add(n);
+
             }
-            Console.WriteLine("вихiднi данi:");
-            foreach (var item in points)
+            Console.WriteLine("enter alpha:");
+            double a = double.Parse(Console.ReadLine());
+            alpha = a;
+            */
+
+            List<int> nums = [];
+            Console.WriteLine("введiть к-сть елементiв: ");
+            int N = int.Parse(Console.ReadLine());
+            for (int i = 0; i < N; i++)
             {
-                Console.WriteLine("("+item.Key+","+item.Value+")");     //початкові дані
+                Random rnd = new Random();
+                nums.Add(rnd.Next(0, 21));
+            }
+            N = nums.Count;
+            nums.Sort();
+            Console.WriteLine("Вибiрка:");
+            foreach (var item in nums)
+            {
+                Console.Write(item+" ");
+            }
+            Console.WriteLine("\nЧастоти кожного з елементiв:");
+            Dictionary<int, int> freq = [];
+            foreach (var item in nums)
+            {
+                if (freq.ContainsKey(item)) freq[item]++;
+                else freq[item] = 1;
+            }
+            foreach (var item in freq)
+            {
+                Console.Write(item+" ");
+            }
+            Console.WriteLine();
+            // ПЕРЕВІРКА НА НОРММАЛЬНИЙ РОЗПОДІЛ
+
+            //знаходимо Хср
+
+            double Xav = 0;
+            foreach (var item in nums)
+            {
+                Xav += item;
+            }
+            Xav /= N;
+            Console.WriteLine("X середнє: "+Xav);
+
+            //знаходимо σср
+
+            double σ = 0;
+            foreach (var item in nums)
+            {
+                σ += Math.Pow(item-Xav,2);
+            }
+            σ = Math.Sqrt(σ / N);
+            Console.WriteLine("Cереднє квадратичне вiдхилення вибiрки: "+σ);
+
+            //знаходимо очікувані та спостережувані частоти 
+
+            Dictionary<int, double> E = [];
+            Dictionary<int, double> O = [];
+            var normal = new Normal(Xav, σ);
+            int ind = 1;
+            double amountO = 0;
+            double amountE = 0;
+            foreach (var item in freq)
+            {
+                double Ei = (normal.CumulativeDistribution(item.Key + 0.5) - normal.CumulativeDistribution(item.Key - 0.5))*N;
+                amountO += item.Value;
+                amountE += Ei;
+                if (amountE >= 5)    
+                {
+                    E[ind] = amountE;
+                    O[ind] = amountO;
+                    ind++;
+                    amountO = 0;
+                    amountE = 0;
+                }
+            }
+            if (amountE > 0)
+            {
+                E[ind] = amountE;
+                O[ind] = amountO;
+            }
+            Console.WriteLine("Iнтервали та їх очiкуванi частоти: \n[номер_iнтервалу, очiкувана частота]");
+            foreach (var item in E)
+            {
+                Console.WriteLine(item);
+            }
+            Console.WriteLine("Iнтервали та їх спостережуванi частоти: \n[номер_iнтервалу, спостережувана частота]");
+            foreach (var item in O)
+            {
+                Console.WriteLine(item);
             }
 
-            double sigma = Math.Sqrt(N / 5);            //задаємо дисперсію
-            double[] noise = new double[N + 10];
-            Random rnd = new Random();
-            for (int i = 0; i < N+10; i++)
+            double ksiSq = 0;
+            for (int i = 0; i < E.Count; i++)
             {
-                double u1 = 1.0 - rnd.NextDouble(); 
-                double u2 = 1.0 - rnd.NextDouble();
-                double z0 = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);      //нормальний розподіл
-                noise[i] = z0 * sigma;
+                ksiSq += Math.Pow(O[i+1] - E[i + 1], 2) / E[i + 1];
             }
-
-            Console.WriteLine("данi з \"шумом\":");
-            for (int i = 0; i < N + 10; i++)
-            {
-                points[i + 1] = Math.Round(points[i + 1]+noise[i],2);
-            }
-            foreach (var item in points)
-            {
-                Console.WriteLine("(" + item.Key + "," + item.Value + ")");
-            }
-
-            double sumX = 0;
-            double sumSqX = 0;
-            double sumY = 0;
-            double sumSqY = 0;
-            double sumXmultY = 0;
-            for (int i = 1; i <= N+10; i++)
-            {
-                sumX += i;
-                sumY += points[i];
-                sumSqX+=(i * i);
-                sumSqY+=(points[i] * points[i]);
-                sumXmultY+=(i * points[i]);
-            }
-            double avX = sumX / (N + 10);
-            double avY = sumY / (N + 10);
-            double avSqX = sumSqX / (N + 10);
-            double avSqY = sumSqY / (N + 10);
-            double avXmultY = sumXmultY/ (N + 10);
-            Console.WriteLine("середнє значення Х = " + avX);
-            Console.WriteLine("середнє значення Y = " + avY);
-            Console.WriteLine("середнє значення Х^2 = " + avSqX);
-            Console.WriteLine("середнє значення Y^2 = " + avSqY);
-            Console.WriteLine("середнє значення XY = " + avXmultY);
-            double Sx = Math.Sqrt(avSqX - Math.Pow(avX, 2));
-            double Sy = Math.Sqrt(avSqY - Math.Pow(avY, 2));
-            Console.WriteLine("середнi квадратичнi вiдхилення:");
-            Console.WriteLine("Sx = "+Sx);
-            Console.WriteLine("Sy = "+Sy);
-            double r = (avXmultY - (avX*avY)) / (Sx * Sy);
-            Console.WriteLine("вибiрковий коефiцiєнт кореляцiї:");
-            Console.WriteLine("r = "+r);
-            double a = Math.Round(r * (Sy / Sx),3);
-            double B = Math.Round(avY - (a * avX),3);
-            Console.WriteLine("коефiцiєнт а = "+a);
-            Console.WriteLine("коефiцiєнт b = "+B);
-            Console.WriteLine("кiнцеве рiвняння:");
-            Console.WriteLine($"y={a}x+{B}");
+            int k = E.Count - 2 - 1;
+            Console.WriteLine("---");
+            Console.WriteLine("Х^2 емпiричне: "+ksiSq);
+            Console.WriteLine("Рiвень значущостi a: "+alpha);
+            Console.WriteLine("Кiлькiть ступенiв свободи k: "+k);
+            Console.WriteLine("---");
         }
+
+
     }
 }
