@@ -102,7 +102,7 @@ namespace EMPI_02
             Normal(nums,freq);
 
             // ПЕРЕВІРКА НА РІВНОМІРНИЙ РОЗПОДІЛ
-            Console.WriteLine("-----ПЕРЕВІРКА НА РІВНОМІРНИЙ РОЗПОДІЛ-----");
+            Console.WriteLine("-----ПЕРЕВIРКА НА РIВНОМIРНИЙ РОЗПОДIЛ-----");
             Uniform(nums, freq);
         }
 
