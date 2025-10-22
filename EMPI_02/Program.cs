@@ -9,43 +9,75 @@ namespace EMPI_02
 {
     internal class Program
     {
-        static double alpha = 0.01;
+        static double alpha = 0.05;
         static int N;
         static void Main(string[] args)
         {
-            /*
-            Console.WriteLine("enter nums by space:");
-            string numLine = Console.ReadLine();
-            string[] S = numLine.Trim().Split();
             List<int> nums = [];
-            foreach (var item in S)
+            Console.WriteLine("Режим введення:\n1- Вручну\n2- Згенерувати вибiрку за нормальним законом розподiлу\n3- Згенерувати вибiрку за рiвномiрним законом розподiлу");
+            int choice = int.Parse(Console.ReadLine());
+            switch (choice)
             {
-               int n = int.Parse(item);
-                if (n >= 0 && n <= 20) nums.Add(n);
+                case 1:
+                    Console.WriteLine("Введiть числа від 0 до 20 через пробіл: (для нормальної роботи програми слiд ввести >30 чисел)");
+                    string numLine = Console.ReadLine();
+                    string[] S = numLine.Trim().Split();
 
-            }
-            Console.WriteLine("enter alpha:");
-            double a = double.Parse(Console.ReadLine());
-            alpha = a;
-            */
+                    foreach (var item in S)
+                    {
+                        int n = int.Parse(item);
+                        if (n >= 0 && n <= 20) nums.Add(n);
 
-            List<int> nums = [];
-            Console.WriteLine("введiть к-сть елементiв: ");
-            N = int.Parse(Console.ReadLine());
-            for (int i = 0; i < N; i++)
-            {
-                Random rnd = new Random();
-                nums.Add(rnd.Next(0, 21));
-                
+                    }
+                    N = nums.Count;
+                    break;
+                case 2:
+                    Console.WriteLine("Введiть к-сть елементiв: ");
+                    N = int.Parse(Console.ReadLine());
+                    Console.WriteLine("Введiть мат. сподsвання: (за замовчуванням 10)");
+                    double mu = 10;
+                    string MU = Console.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(MU))
+                    {
+                        mu = double.Parse(MU);
+                    }
+                    Console.WriteLine("Введiть вiдхилення: (за замовчуванням 5)");
+                    double sigma = 5;
+                    string SGM = Console.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(SGM))
+                    {
+                        sigma = double.Parse(SGM);
+                    }
+                    Normal normal = new Normal(mu, sigma);
+                    for (int i = 0; i < N; i++)
+                    {
+                        double x = normal.Sample();
+                        nums.Add((int)Math.Round(x));
+                    }
+                    break;
+                case 3:
+                    Console.WriteLine("Введiть к-сть елементiв: ");
+                    N = int.Parse(Console.ReadLine());
+                    var uniform = new ContinuousUniform(0, 20);
+                    for (int i = 0; i < N; i++)
+                    {
+                        double x = uniform.Sample();
+                        nums.Add((int)Math.Round(x)); 
+                    }
+                    break;
+                default:
+                    Main(args);
+                    break;
             }
-            nums.Clear();
-            var uniform = new ContinuousUniform(0, 21);
-            for (int i = 0; i < N; i++)
+           
+            Console.WriteLine("Введiть рiвень значущостi а: (за замовчуванням 0.05)");
+            string A = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(A))
             {
-                double x = uniform.Sample(); // повертає double
-                nums.Add((int)Math.Round(x)); // округлюємо до int
+                double a = double.Parse(A);
+                alpha = a;
             }
-            N = nums.Count;
+           
             nums.Sort();
             Console.WriteLine("Вибiрка:");
             foreach (var item in nums)
@@ -63,20 +95,15 @@ namespace EMPI_02
             {
                 Console.Write(item+" ");
             }
-            Console.WriteLine();
+            Console.WriteLine("\n");
 
             // ПЕРЕВІРКА НА НОРМАЛЬНИЙ РОЗПОДІЛ
-            //Normal(nums,freq);
-
-
+            Console.WriteLine("-----ПЕРЕВIРКА НА НОРМАЛЬНИЙ РОЗПОДIЛ-----");
+            Normal(nums,freq);
 
             // ПЕРЕВІРКА НА РІВНОМІРНИЙ РОЗПОДІЛ
+            Console.WriteLine("-----ПЕРЕВІРКА НА РІВНОМІРНИЙ РОЗПОДІЛ-----");
             Uniform(nums, freq);
-            
-
-
-
-
         }
 
         static void Normal(List<int> nums, Dictionary<int, int> freq)
@@ -89,7 +116,7 @@ namespace EMPI_02
                 Xav += item;
             }
             Xav /= N;
-            Console.WriteLine("X середнє: " + Xav);
+            Console.WriteLine("X_середнє: " + Xav);
 
             //знаходимо σср
 
@@ -99,7 +126,7 @@ namespace EMPI_02
                 σ += Math.Pow(item - Xav, 2);
             }
             σ = Math.Sqrt(σ / N);
-            Console.WriteLine("Cереднє квадратичне вiдхилення вибiрки: " + σ);
+            Console.WriteLine("Cереднє квадратичне вiдхилення вибiрки: " + σ+"\n");
 
             //знаходимо очікувані та спостережувані частоти 
 
@@ -145,12 +172,17 @@ namespace EMPI_02
             {
                 ksiSq += Math.Pow(O[i + 1] - E[i + 1], 2) / E[i + 1];
             }
-            int k = E.Count - 2 - 1;
-            Console.WriteLine("---");
-            Console.WriteLine("Х^2 емпiричне: " + ksiSq);
+            int k = E.Count - 1;
+
+            Console.WriteLine("--- Висновок ---");
             Console.WriteLine("Рiвень значущостi a: " + alpha);
             Console.WriteLine("Кiлькiть ступенiв свободи k: " + k);
-            Console.WriteLine("---");
+            double ksiCrit = ChiSquared.InvCDF(k, 1 - alpha);
+            Console.WriteLine("Х^2 емпiричне: " + ksiSq);
+            Console.WriteLine("Х^2 критичне: " + ksiCrit);
+            if (ksiCrit > ksiSq) Console.WriteLine("Гiпотезу приймаємо");
+            else Console.WriteLine("Гiпотезу вiдхиляємо");
+            Console.WriteLine("--- -------- ---\n");
         }
 
         static void Uniform(List<int> nums, Dictionary<int, int> freq)
@@ -159,16 +191,21 @@ namespace EMPI_02
 
             Console.WriteLine("Кiлькiсть унiкальних елементiв " + freq.Count);
             int amountOfIntervals = freq.Count / 5;
+
+            if (amountOfIntervals < 2)
+            {
+                amountOfIntervals = 3;
+                Console.WriteLine("Вибірка не пiдходить до розбиття, тому встановлено 3 за замовчуванням");
+            }
             int currInvertal = 1;
             Console.WriteLine("Подiлимо вибiрку на "+ amountOfIntervals+ " iнтервалiв");
 
             int maxElementsInInterval = freq.Count/amountOfIntervals;
-            Console.WriteLine("Тодi кiлькiсть елементiв в iнтервалi " + maxElementsInInterval);
+            Console.WriteLine("Тодi кiлькiсть елементiв в iнтервалi " + maxElementsInInterval+"\n");
 
             Dictionary<int, double> E = [];
             Dictionary<int, double> O = [];
             
-            double amount = 0;
             List<int> interval = [];
             foreach (var item in freq)
             {
@@ -207,11 +244,16 @@ namespace EMPI_02
                 ksiSq += Math.Pow(O[i + 1] - E[i + 1], 2) / E[i + 1];
             }
             int k = E.Count - 1;
-            Console.WriteLine("---");
-            Console.WriteLine("Х^2 емпiричне: " + ksiSq);
+
+            Console.WriteLine("--- Висновок ---");
             Console.WriteLine("Рiвень значущостi a: " + alpha);
             Console.WriteLine("Кiлькiть ступенiв свободи k: " + k);
-            Console.WriteLine("---");
+            double ksiCrit = ChiSquared.InvCDF(k, 1 - alpha);
+            Console.WriteLine("Х^2 емпiричне: " + ksiSq);
+            Console.WriteLine("Х^2 критичне: " + ksiCrit);
+            if (ksiCrit > ksiSq) Console.WriteLine("Гiпотезу приймаємо");
+            else Console.WriteLine("Гiпотезу вiдхиляємо");
+            Console.WriteLine("--- -------- ---\n");
         }
     }
 }
