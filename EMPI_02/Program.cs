@@ -52,7 +52,8 @@ namespace EMPI_02
                     for (int i = 0; i < N; i++)
                     {
                         double x = normal.Sample();
-                        nums.Add((int)Math.Round(x));
+                        if (x >= 0 && x <= 20) nums.Add((int)Math.Round(x));
+                        else i--;
                     }
                     break;
                 case 3:
@@ -62,7 +63,8 @@ namespace EMPI_02
                     for (int i = 0; i < N; i++)
                     {
                         double x = uniform.Sample();
-                        nums.Add((int)Math.Round(x)); 
+                        if (x >= 0 && x <= 20) nums.Add((int)Math.Round(x));
+                        else i--;
                     }
                     break;
                 default:
